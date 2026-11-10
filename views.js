@@ -79,7 +79,7 @@ const Router = {
 const ymHash = (y, m) => `m-${D.ym(y, m)}`;
 
 /* ---------------- frammenti UI ---------------- */
-const logoImg = (cls = '') => `<img class="${cls}" src="img/logo.png" alt="MoBe Visuals">`;
+const logoImg = (cls = '') => `<img class="${cls}" src="logo.png" alt="MoBe Visuals">`;
 function bar(backHref, backLabel) {
   return `<header class="bar"><a class="back" href="#${backHref}">${I('left')}<span>${esc(backLabel)}</span></a>
     <a class="bar-brand" href="#home" aria-label="Home">${logoImg()}</a>
@@ -479,7 +479,7 @@ async function signOut() {
 }
 (async function boot() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') Modal.closeTop(); });
-  if (!Auth.init()) { $('#main').innerHTML = `<div class="page"><div class="empty"><div class="h2">Configurazione mancante</div><p>Inserisci URL e chiave di Supabase in js/config.js.</p></div></div>`; return; }
+  if (!Auth.init()) { $('#main').innerHTML = `<div class="page"><div class="empty"><div class="h2">Configurazione mancante</div><p>Inserisci URL e chiave di Supabase in config.js.</p></div></div>`; return; }
   const u = await Auth.session();
   if (u) openApp(u); else loginView();
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && started) { Store.reset(); loginView(); } });

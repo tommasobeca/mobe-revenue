@@ -1,7 +1,7 @@
 /* MoBe Revenue Tracker — service worker: l'app si apre anche senza rete */
 const VERSION = 'mobe-rev-v1';
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css', 'js/vendor/supabase.js', 'js/config.js', 'js/core.js', 'js/views.js',
-  'img/logo.png', 'img/icon-192.png', 'img/icon-512.png', 'img/apple-touch-icon.png'];
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'app.css', 'supabase.js', 'config.js', 'core.js', 'views.js',
+  'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => !k.startsWith(VERSION)).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
