@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Entrate, accantonamento 30% e fatture di MoBe Visuals.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MoBe Revenue">
+<meta name="format-detection" content="telephone=no">
+<title>MoBe Revenue Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main id="main"><div class="boot"><div class="boot-mark">MoBe</div><div class="boot-sub">Caricamento entrate…</div></div></main>
+<div id="net" class="net" hidden></div>
+<button id="fab" class="fab" hidden aria-label="Aggiungi entrata"></button>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<script src="js/vendor/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/views.js"></script>
+</body>
+</html>
