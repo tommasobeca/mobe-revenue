@@ -1,5 +1,5 @@
 /* MoBe Revenue Tracker — service worker: l'app si apre anche senza rete */
-const VERSION = 'mobe-rev-v2';
+const VERSION = 'mobe-rev-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'app.css', 'supabase.js', 'config.js', 'core.js', 'views.js',
   'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });

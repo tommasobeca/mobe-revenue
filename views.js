@@ -13,6 +13,7 @@ const I = (() => {
     cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     check: '<path d="m5 12 5 5 9-10"/>',
     ext: '<path d="M9 6h9v9M18 6 6 18"/>',
+    candles: '<path d="M6 4v16M12 7v13M18 3v17"/><rect x="4.5" y="9" width="3" height="7" rx=".6"/><rect x="10.5" y="11" width="3" height="6" rx=".6"/><rect x="16.5" y="6" width="3" height="9" rx=".6"/>',
   };
   return (n, sw = 1.6) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p[n] || ''}</svg>`;
 })();
@@ -60,6 +61,7 @@ const Router = {
     if ((m = h.match(/^m-(\d{4})-(\d{2})-c-([a-z0-9]+)$/))) return { view: 'clientMonth', y: +m[1], m: +m[2], cid: m[3] };
     if ((m = h.match(/^m-(\d{4})-(\d{2})$/))) return { view: 'month', y: +m[1], m: +m[2] };
     if ((m = h.match(/^cliente-([a-z0-9]+)$/))) return { view: 'client', cid: m[1] };
+    if ((m = h.match(/^anno-(\d{4})$/))) return { view: 'year', y: +m[1] };
     if (h === 'clienti') return { view: 'clients' };
     return { view: 'home' };
   },
@@ -115,6 +117,7 @@ Views.home = () => {
     <header class="home-top">
       <a class="home-brand" href="#home" aria-label="MoBe Visuals">${logoImg()}</a>
       <div class="home-id"><span class="home-title">Revenue <em>Tracker</em></span><span class="home-date">${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}</span></div>
+      <a class="home-add home-sum" href="#anno-${y}" title="Riepilogo ${y}" aria-label="Riepilogo dell’anno ${y}">${I('candles', 1.4)}</a>
       <button class="home-add" data-act="quick" title="Nuova entrata" aria-label="Nuova entrata">${I('plus', 1.4)}</button>
     </header>
     <nav class="years" role="tablist" aria-label="Anno">${years.map(x => `<button class="${x === y ? 'on' : ''}" data-year="${x}" role="tab" aria-selected="${x === y}">${x}</button>`).join('')}</nav>
@@ -279,6 +282,96 @@ Views.client = ({ cid }) => {
   };
   $('[data-act="add-entry"]').onclick = () => entryModal({ clientId: cid });
   bindEntryRows();
+};
+
+/* ---------------- riepilogo annuale: grafico a candele + clienti ---------------- */
+Views.year = ({ y }) => {
+  setYear(y);
+  const years = Data.years(); const es = Data.inYear(y); const s = sum(es);
+  const months = MONTHS_L.map((name, i) => ({ name, m: i + 1, s: sum(Data.inMonth(y, i + 1)) }));
+  const active = months.filter(x => x.s.count);
+  const best = active.slice().sort((a, b) => b.s.tot - a.s.tot)[0];
+  const avg = active.length ? Math.round(s.tot / active.length) : 0;
+  const byClient = new Map(); es.forEach(e => { if (!byClient.has(e.clientId)) byClient.set(e.clientId, []); byClient.get(e.clientId).push(e); });
+  const rows = Array.from(byClient.entries()).map(([cid, list]) => ({ c: Data.client(cid), s: sum(list) })).filter(r => r.c).sort((a, b) => b.s.tot - a.s.tot || a.c.name.localeCompare(b.c.name, 'it'));
+  const topTot = rows.length ? rows[0].s.tot : 1;
+  $('#main').innerHTML = `${bar('', 'Home')}<div class="page year">
+    <div class="head"><div class="eyebrow">Riepilogo annuale</div>
+      <div class="head-row"><h1 class="h1">Anno <em>${y}</em></h1></div>
+      <nav class="years in-page" role="tablist" aria-label="Anno">${years.map(x => `<a class="${x === y ? 'on' : ''}" href="#anno-${x}" role="tab" aria-selected="${x === y}">${x}</a>`).join('')}</nav></div>
+    ${statGrid(s, [['Registrazioni', String(s.count), 'sm'], ['Clienti attivi', String(s.clients), 'sm']])}
+    <section class="chart-card">
+      <div class="chart-head"><span class="sec-t">Andamento mensile</span>
+        <div class="legend"><span><i class="sw net"></i>Netto</span><span><i class="sw acc"></i>30%</span><span><i class="sw avg"></i>Media</span></div></div>
+      <div class="candles" id="candles" role="img" aria-label="Fatturato mensile ${y}: ogni candela è il fatturato del mese, netto in nero e accantonamento 30% in bronzo"></div>
+      <div class="cdetail" id="cdetail"></div>
+    </section>
+    <div class="sec-h"><span class="sec-t">Incassato per cliente</span><span class="sec-c">${rows.length} ${rows.length === 1 ? 'cliente' : 'clienti'}</span></div>
+    ${rows.length ? `<div class="clist rank">${rows.map((r, i) => `<a class="rrow" href="#cliente-${r.c.id}">
+        <span class="rk">${pad(i + 1)}</span>
+        <span class="r-main"><span class="cc-name">${esc(r.c.name)}</span><span class="cc-sub">${plural(r.s.count, 'registrazione', 'registrazioni')}${r.s.quota ? ` · <span class="q">30% ${Money.fmt(r.s.quota)}</span>` : ''}</span>
+          <span class="share"><span style="width:${Math.max(2, r.s.tot / topTot * 100)}%"></span></span></span>
+        <span class="r-tot"><b>${Money.fmt(r.s.tot)}</b><small>${s.tot ? (r.s.tot / s.tot * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 }) : 0}%</small></span>
+      </a>`).join('')}
+      <div class="ctotal"><span>Totale ${y}</span><b>${Money.fmt(s.tot)}</b></div></div>`
+    : `<div class="empty"><div class="h2">Nessuna entrata nel ${y}</div><p>Quando registri i compensi, qui vedi l’andamento mese per mese e quanto ha portato ogni cliente.</p></div>`}
+  </div>`;
+  let sel = null;
+  const detail = () => {
+    const box = $('#cdetail'); if (!box) return;
+    if (sel == null) {
+      box.innerHTML = active.length ? `<div class="cd-row"><span class="cd-t">Media mensile <small>su ${active.length} ${active.length === 1 ? 'mese' : 'mesi'} con entrate</small></span><b>${Money.fmt(avg)}</b></div>
+        <div class="cd-row"><span class="cd-t">Mese migliore</span><b>${best.name} · ${Money.fmt(best.s.tot)}</b></div><p class="cd-hint">Tocca una candela per vedere il dettaglio del mese.</p>` : `<p class="cd-hint">Nessuna entrata da mostrare.</p>`;
+      return;
+    }
+    const x = months[sel - 1]; const ym = D.ym(y, sel);
+    const open = x.s.count ? new Set(Data.inMonth(y, sel).map(e => e.clientId).filter(cid => !Data.monthStatus(ym, cid).paid)).size : 0;
+    box.innerHTML = `<div class="cd-top"><span class="cd-m">${x.name} <em>${y}</em></span>${x.s.count ? `<span class="cd-st ${open ? 'open' : 'ok'}"><i></i>${open ? `${open} da incassare` : 'Tutto pagato'}</span>` : ''}</div>
+      <div class="cd-grid"><div><span>Fatturato</span><b>${Money.fmt(x.s.tot)}</b></div><div class="acc"><span>30%</span><b>${Money.fmt(x.s.quota)}</b></div><div><span>Netto</span><b>${Money.fmt(x.s.netto)}</b></div></div>
+      <a class="btn sm" href="#${ymHash(y, sel)}">Apri ${x.name.toLowerCase()} ${I('right')}</a>`;
+  };
+  const draw = () => {
+    const host = $('#candles'); if (!host) return;
+    const W = Math.max(300, host.clientWidth); const H = W < 520 ? 200 : 240; const padL = 46, padR = 8, padT = 22, padB = 24;
+    const pw = W - padL - padR, ph = H - padT - padB, slot = pw / 12;
+    const maxV = Math.max(1, ...months.map(x => x.s.tot));
+    const step = (() => { const raw = maxV / 3; const mag = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 2.5, 5, 10].map(k => k * mag).find(v => v >= raw); })();
+    const top = step * 3; const Y = (v) => padT + ph - v / top * ph;
+    const kfmt = (c) => { const e = c / 100; return e >= 1000 ? `€ ${(e / 1000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}k` : `€ ${Math.round(e)}`; };
+    const bw = Math.max(10, Math.min(28, slot * 0.5)); const r = Math.min(4, bw / 2);
+    const curYM = D.ym(new Date().getFullYear(), new Date().getMonth() + 1);
+    const seg = (x, y0, y1, round) => { // rettangolo da y0 (alto) a y1 (basso), angoli superiori arrotondati se round
+      const h = y1 - y0; if (h <= 0) return ''; const rr = round ? Math.min(r, h) : 0;
+      return `M${x},${y1} L${x},${y0 + rr} Q${x},${y0} ${x + rr},${y0} L${x + bw - rr},${y0} Q${x + bw},${y0} ${x + bw},${y0 + rr} L${x + bw},${y1} Z`; };
+    let g = '';
+    for (let k = 0; k <= 3; k++) { const yy = Y(step * k); g += `<line x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}" class="${k ? 'grid' : 'base'}"/><text x="${padL - 8}" y="${yy + 3.5}" class="ax" text-anchor="end">${k ? kfmt(step * k) : '0'}</text>`; }
+    if (avg) { const ya = Y(avg); g += `<line x1="${padL}" x2="${W - padR}" y1="${ya}" y2="${ya}" class="avg"/>`; }
+    months.forEach((x, i) => {
+      const cx = padL + slot * i + slot / 2; const x0 = cx - bw / 2; const base = Y(0);
+      const dim = sel && sel !== x.m ? ' dim' : '';
+      const lab = W < 520 ? x.name[0] : MONTHS_S[i];
+      const cur = D.ym(y, x.m) === curYM ? ' cur' : '';
+      g += `<g class="cnd${dim}${sel === x.m ? ' on' : ''}" data-m="${x.m}">`;
+      if (x.s.tot) {
+        const yN = Y(x.s.netto); const yT = Y(x.s.tot); const gap = x.s.quota && x.s.netto ? 2 : 0;
+        if (x.s.netto) g += `<path class="b-net" d="${seg(x0, yN, base, !x.s.quota)}"/>`;
+        if (x.s.quota) g += `<path class="b-acc" d="${seg(x0, yT, (x.s.netto ? yN : base) - gap, true)}"/>`;
+        if (x.m === best?.m || sel === x.m) g += `<text x="${cx}" y="${yT - 7}" class="vl" text-anchor="middle">${kfmt(x.s.tot)}</text>`;
+      } else g += `<circle cx="${cx}" cy="${base}" r="1.6" class="nil"/>`;
+      g += `<text x="${cx}" y="${H - 7}" class="ml${cur}" text-anchor="middle">${lab}</text>
+        <rect class="hit" x="${padL + slot * i}" y="${padT - 14}" width="${slot}" height="${ph + 14 + padB}"><title>${x.name}: ${Money.fmt(x.s.tot)} · 30% ${Money.fmt(x.s.quota)} · netto ${Money.fmt(x.s.netto)}</title></rect></g>`;
+    });
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${g}</svg>`;
+    $$('.cnd', host).forEach(el => {
+      const m = +el.dataset.m;
+      el.onclick = () => { sel = sel === m ? null : m; draw(); detail(); };
+      el.onmouseenter = () => { if (matchMedia('(hover:hover)').matches && sel !== m) { sel = m; draw(); detail(); } };
+    });
+  };
+  draw(); detail();
+  if (Views._yr) window.removeEventListener('resize', Views._yr);
+  Views._yr = () => { if (Router.current && Router.current.view === 'year') draw(); };
+  window.addEventListener('resize', Views._yr);
 };
 
 /* ---------------- moduli ---------------- */
