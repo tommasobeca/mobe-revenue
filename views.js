@@ -112,30 +112,33 @@ Views.home = () => {
   const max = Math.max(1, ...months.map(x => x.s.tot));
   const d = new Date();
   $('#main').innerHTML = `<div class="page home">
-    <header class="home-top"><span></span><a class="home-brand" href="#home">${logoImg()}</a>
-      <button class="home-add" data-act="quick" title="Nuova entrata" aria-label="Nuova entrata">${I('plus', 1.4)}</button></header>
-    <div class="home-meta">Revenue Tracker · ${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}</div>
-    <div class="years" role="tablist">${years.map(x => `<button class="${x === y ? 'on' : ''}" data-year="${x}">${x}</button>`).join('')}</div>
-    <section class="kpis">
-      <div class="kpi"><div class="eyebrow">Fatturato annuale ${y}</div><div class="kn" id="k-tot">${Money.fmt(s.tot)}</div></div>
-      <div class="kpi acc"><div class="eyebrow">Totale accantonamento 30%</div><div class="kn" id="k-quota">${Money.fmt(s.quota)}</div></div>
+    <header class="home-top">
+      <a class="home-brand" href="#home" aria-label="MoBe Visuals">${logoImg()}</a>
+      <div class="home-id"><span class="home-title">Revenue <em>Tracker</em></span><span class="home-date">${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}</span></div>
+      <button class="home-add" data-act="quick" title="Nuova entrata" aria-label="Nuova entrata">${I('plus', 1.4)}</button>
+    </header>
+    <nav class="years" role="tablist" aria-label="Anno">${years.map(x => `<button class="${x === y ? 'on' : ''}" data-year="${x}" role="tab" aria-selected="${x === y}">${x}</button>`).join('')}</nav>
+    <section class="dash" aria-label="Riepilogo ${y}">
+      <div class="dash-main"><div class="dl">Fatturato annuale <span class="dy">${y}</span></div><div class="dv" id="k-tot">${Money.fmt(s.tot)}</div></div>
+      <div class="dash-acc"><div class="dl">Accantonamento 30%</div><div class="dv2" id="k-quota">${Money.fmt(s.quota)}</div></div>
+      <div class="dash-foot">
+        <div><span>Netto annuale</span><b>${Money.fmt(s.netto)}</b></div>
+        <div><span>Registrazioni</span><b>${s.count}</b></div>
+        <div><span>Clienti attivi</span><b>${s.clients}</b></div>
+      </div>
     </section>
-    <div class="kstrip">
-      <div><span class="l">Netto annuale</span><b>${Money.fmt(s.netto)}</b></div>
-      <div><span class="l">Registrazioni</span><b>${s.count}</b></div>
-      <div><span class="l">Clienti attivi</span><b>${s.clients}</b></div>
-    </div>
-    <div class="sec-h"><span class="eyebrow">I mesi del ${y}</span><span class="eyebrow dim">${months.filter(x => x.s.count).length} / 12 con entrate</span></div>
+    <div class="sec-h months-h"><span class="sec-t">I mesi del ${y}</span><span class="sec-c">${months.filter(x => x.s.count).length}/12 con entrate</span></div>
     <div class="months">${months.map(x => {
       const cur = D.ym(y, x.m) === curYM; const has = x.s.count > 0;
       // clienti con entrate nel mese non ancora segnati come "Pagata"
       const open = has ? new Set(Data.inMonth(y, x.m).map(e => e.clientId).filter(cid => !Data.monthStatus(D.ym(y, x.m), cid).paid)).size : 0;
-      return `<a class="mcard ${has ? 'has' : ''} ${open ? 'open' : ''} ${cur ? 'cur' : ''}" href="#${ymHash(y, x.m)}">
-        <div class="mc-top"><span class="mn">${pad(x.m)}</span>${cur ? '<span class="now">Ora</span>' : ''}<i class="dot" title="${!has ? 'Nessuna registrazione' : open ? `${open} ${open === 1 ? 'cliente' : 'clienti'} da incassare` : 'Tutto pagato'}"></i></div>
+      const stTitle = !has ? 'Nessuna registrazione' : open ? `${open} ${open === 1 ? 'cliente' : 'clienti'} da incassare` : 'Tutto pagato';
+      return `<a class="mcard ${has ? 'has' : ''} ${open ? 'open' : ''} ${cur ? 'cur' : ''}" href="#${ymHash(y, x.m)}" aria-label="${x.name} ${y}: ${stTitle}">
+        <div class="mc-top"><span class="mn">${pad(x.m)}</span>${cur ? '<span class="now">Ora</span>' : ''}<i class="dot" title="${stTitle}"></i></div>
         <div class="mname">${x.name}</div>
         <div class="mtot">${has ? Money.fmt(x.s.tot) : '<span class="nil">—</span>'}</div>
-        <div class="mq"><span>30%</span> ${Money.fmt(x.s.quota)}</div>
-        <div class="mbar"><span style="width:${has ? Math.max(3, x.s.tot / max * 100) : 0}%"></span></div>
+        <div class="mq">${has ? `30% ${Money.fmt(x.s.quota)}` : '&nbsp;'}</div>
+        <div class="mbar" title="Quota sul mese migliore dell’anno"><span style="width:${has ? Math.max(3, x.s.tot / max * 100) : 0}%"></span></div>
       </a>`;
     }).join('')}</div>
     <nav class="home-foot"><a href="#clienti">${I('users')}Database clienti <span class="cnt">${Store.all('clients').length}</span></a>
@@ -162,7 +165,7 @@ Views.month = ({ y, m }) => {
         <div class="mnav"><a href="#${ymHash(...prev)}" aria-label="Mese precedente">${I('left')}</a><a href="#${ymHash(...next)}" aria-label="Mese successivo">${I('right')}</a></div></div>
     </div>
     ${statGrid(s, [['Registrazioni', String(s.count), 'sm'], ['Clienti attivi', String(s.clients), 'sm']])}
-    <div class="sec-h"><span class="eyebrow">Clienti del mese</span><button class="btn sm" data-act="add-client">${I('plus')}Aggiungi cliente</button></div>
+    <div class="sec-h"><span class="sec-t">Clienti del mese</span><button class="btn sm" data-act="add-client">${I('plus')}Aggiungi cliente</button></div>
     ${clients.length ? `<div class="clist">${clients.map(({ c, s: cs }) => `
       <a class="ccard" href="#${ymHash(y, m)}-c-${c.id}">
         <div class="ini">${esc(c.name.trim().slice(0, 1).toUpperCase())}</div>
@@ -191,7 +194,7 @@ Views.clientMonth = ({ y, m, cid }) => {
       <label class="chk big st-sent"><input type="checkbox" data-st="sent" ${st.sent ? 'checked' : ''}><span class="box"></span><span><b>Fattura inviata</b><small>${st.sent && st.sentAt ? 'Segnata il ' + D.fmt(st.sentAt) : 'Non ancora inviata'}</small></span></label>
       <label class="chk big st-paid"><input type="checkbox" data-st="paid" ${st.paid ? 'checked' : ''}><span class="box"></span><span><b>Pagata</b><small>${st.paid && st.paidAt ? 'Segnata il ' + D.fmt(st.paidAt) : 'Non ancora pagata'}</small></span></label>
     </div>`; })()}
-    <div class="sec-h"><span class="eyebrow">Entrate</span><button class="btn sm primary" data-act="add-entry">${I('plus')}Aggiungi entrata</button></div>
+    <div class="sec-h"><span class="sec-t">Entrate</span><button class="btn sm primary" data-act="add-entry">${I('plus')}Aggiungi entrata</button></div>
     ${es.length ? `<div class="elist">${es.map(e => entryRow(e)).join('')}
       <div class="ctotal"><span>Totale cliente</span><b>${Money.fmt(s.tot)}</b></div></div>`
     : `<div class="empty"><div class="h2">Ancora nessuna entrata</div><p>Registra il primo compenso di ${esc(c.name)} per ${MONTHS_L[m - 1].toLowerCase()}.</p><button class="btn primary" data-act="add-entry">${I('plus')}Aggiungi entrata</button>
@@ -261,7 +264,7 @@ Views.client = ({ cid }) => {
         <div class="btn-row"><button class="btn sm" data-act="edit">${I('edit')}Modifica</button><button class="btn sm danger icon" data-act="del" aria-label="Elimina cliente">${I('trash')}</button></div></div>
       ${c.info ? `<p class="info">${esc(c.info)}</p>` : ''}</div>
     ${statGrid(s, [['Registrazioni', String(s.count), 'sm']])}
-    <div class="sec-h"><span class="eyebrow">Storico entrate</span><button class="btn sm primary" data-act="add-entry">${I('plus')}Aggiungi entrata</button></div>
+    <div class="sec-h"><span class="sec-t">Storico entrate</span><button class="btn sm primary" data-act="add-entry">${I('plus')}Aggiungi entrata</button></div>
     ${es.length ? Array.from(groups.entries()).map(([k, list]) => {
       const [yy, mm] = k.split('-').map(Number); const gs = sum(list);
       return `<div class="hgroup"><a class="hg-h" href="#${ymHash(yy, mm)}-c-${c.id}"><span>${MONTHS_L[mm - 1]} ${yy}</span>${statusPill(k, c.id, list.length)}<b>${Money.fmt(gs.tot)}</b>${I('right')}</a>
