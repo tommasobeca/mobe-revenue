@@ -1,5 +1,5 @@
 /* MoBe Revenue Tracker — service worker: l'app si apre anche senza rete */
-const VERSION = 'mobe-rev-v4';
+const VERSION = 'mobe-rev-v5';
 const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'app.css', 'config.js', 'core.js', 'views.js',
   'logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];

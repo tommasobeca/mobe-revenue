@@ -577,6 +577,8 @@ async function signOut() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') Modal.closeTop(); });
   if (!Auth.init()) { $('#main').innerHTML = `<div class="page"><div class="empty"><div class="h2">Configurazione mancante</div><p>Inserisci URL e chiave di Supabase in config.js.</p></div></div>`; return; }
   const u = await Auth.session();
+  // ritorno dal link di conferma email: ripulisce l'indirizzo
+  if (/access_token|error_description|type=signup/.test(location.hash)) history.replaceState(null, '', location.pathname + '#home');
   if (u) openApp(u); else loginView();
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && started) { Store.reset(); loginView(); } });
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });

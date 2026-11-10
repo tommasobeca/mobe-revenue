@@ -72,7 +72,7 @@ const Auth = {
   },
   async session() { try { const { data } = await sb.auth.getSession(); this.user = data.session ? data.session.user : null; } catch (e) { this.user = null; } return this.user; },
   async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; this.user = data.user; return data.user; },
-  async signUp(email, password) { const { data, error } = await sb.auth.signUp({ email, password }); if (error) throw error; if (data.session) this.user = data.user; return data; },
+  async signUp(email, password) { const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } }); if (error) throw error; if (data.session) this.user = data.user; return data; },
   async signOut() { try { await sb.auth.signOut(); } catch (e) { } this.user = null; },
 };
 
